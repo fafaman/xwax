@@ -99,6 +99,8 @@ void deck_load(struct deck *deck, struct record *record)
     if (t == NULL)
         return;
 
+    controller_update(deck);
+
     deck->record = record;
     player_set_track(&deck->player, t); /* passes reference */
 }
@@ -126,8 +128,13 @@ void deck_clone(struct deck *deck, const struct deck *from)
 void deck_unset_cue(struct deck *d, unsigned int label)
 {
     cues_unset(&d->cues, label);
+    controller_update(d);
 }
 
+double deck_get_cue(struct deck *d, unsigned int label)
+{
+    return cues_get(&d->cues, label);
+}
 /*
  * Seek the current playback position to a cue point position,
  * or set the cue point if unset
@@ -138,10 +145,13 @@ void deck_cue(struct deck *d, unsigned int label)
     double p;
 
     p = cues_get(&d->cues, label);
-    if (p == CUE_UNSET)
+    if (p == CUE_UNSET) {
         cues_set(&d->cues, label, player_get_elapsed(&d->player));
+        controller_update(d);
+    }
     else
         player_seek_to(&d->player, p);
+
 }
 
 /*
@@ -157,6 +167,7 @@ void deck_punch_in(struct deck *d, unsigned int label)
     p = cues_get(&d->cues, label);
     if (p == CUE_UNSET) {
         cues_set(&d->cues, label, e);
+        controller_update(d);
         return;
     }
 
