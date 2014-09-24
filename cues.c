@@ -110,13 +110,13 @@ double cues_next(const struct cues *q, double current)
     return r;
 }
 
-static int cues_init(struct cues *q, const char *cueloader, const char *path)
+static int cues_init(struct cues *q, const char *cueloader, const char *path, const char *cmd)
 {
     pid_t pid;
 
     fprintf(stderr, "Loading cues for '%s'...\n", path);
 
-    pid = fork_pipe_nb(&q->fd, cueloader, "cueloader", "LOAD", path, NULL);
+    pid = fork_pipe_nb(&q->fd, cueloader, "cueloader", cmd, path, NULL);
     if (pid == -1)
         return -1;
     
@@ -135,22 +135,14 @@ static int cues_init(struct cues *q, const char *cueloader, const char *path)
     return 0;
 }
 
-struct cues* cues_set_by_cueloader(const char *cueloader, const char *path)
+int cues_set_by_cueloader(struct cues *q, const char *cueloader, const char *path)
 {
-    struct cues *q;
+    return cues_init(q, cueloader, path, "LOAD");
+}
 
-    q = malloc(sizeof(*q));
-    if (q == NULL) {
-        perror("malloc");
-        return NULL;
-    }
-
-    if (cues_init(q, cueloader, path) == -1) {
-        free(q);
-        return NULL;
-    }
-
-    return q;
+int cues_save_by_cueloader(struct cues *q, const char *cueloader, const char *path)
+{
+    return cues_init(q, cueloader, path, "SAVE");
 }
 
 void cues_acquire(struct cues *q)
@@ -168,10 +160,20 @@ void cues_pollfd(struct cues *q, struct pollfd *pe)
     q->pe = pe;
 }
 
-double get_cue_point(char *line)
+double get_cue_point(const char *s)
 {
+    char *endptr;
+    double point;
 
-    return 0;
+    if (s[0] == '\0') /* empty string, valid for 'unset cuepoint' */
+        return CUE_UNSET;
+
+    errno = 0;
+    point = strtod(s, &endptr);
+    if (errno == ERANGE || *endptr != '\0' || !isfinite(point) || point <= 0.0)
+        return CUE_UNSET;
+
+    return point;
 }
 
 static int read_from_pipe(struct cues *q)
@@ -268,7 +270,6 @@ void cues_release(struct cues *q)
 
     if (q->refcount == 0) {
         cues_clear(q);
-        free(q); /* hummm not to sure */
     }
 }
 

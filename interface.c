@@ -117,6 +117,7 @@
 #define FUNC_LOAD 0
 #define FUNC_RECUE 1
 #define FUNC_TIMECODE 2
+#define FUNC_SAVECUE 3
 
 /* Types of SDL_USEREVENT */
 
@@ -1492,6 +1493,11 @@ static bool handle_key(SDLKey key, SDLMod mod)
                     (void)player_toggle_timecode_control(pl);
                 }
                 break;
+
+            case FUNC_SAVECUE:
+                deck_save_cue(de);
+                break;
+
             }
         }
     }

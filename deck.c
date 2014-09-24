@@ -89,7 +89,6 @@ bool deck_is_locked(const struct deck *deck)
 void deck_load(struct deck *deck, struct record *record)
 {
     struct track *t;
-    struct cues *q;
 
     if (deck_is_locked(deck)) {
         status_printf(STATUS_WARN, "Stop deck to load a different track");
@@ -100,9 +99,7 @@ void deck_load(struct deck *deck, struct record *record)
     if (t == NULL)
         return;
 
-    q = cues_set_by_cueloader(deck->cueloader, record->pathname);
-    if (q == NULL)
-        return;
+    cues_set_by_cueloader(&deck->cues, deck->cueloader, record->pathname);
 
     deck->record = record;
     player_set_track(&deck->player, t); /* passes reference */
@@ -186,4 +183,12 @@ void deck_punch_out(struct deck *d)
     e = player_get_elapsed(&d->player);
     player_seek_to(&d->player, e - d->punch);
     d->punch = NO_PUNCH;
+}
+
+void deck_save_cue(struct deck *d)
+{
+    if (d->record->pathname)
+        cues_save_by_cueloader(&d->cues, 
+                               d->cueloader, 
+                               d->record->pathname);
 }
