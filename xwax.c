@@ -51,6 +51,7 @@
 
 #define DEFAULT_IMPORTER EXECDIR "/xwax-import"
 #define DEFAULT_SCANNER EXECDIR "/xwax-scan"
+#define DEFAULT_CUELOADER EXECDIR "/xwax-cue"
 #define DEFAULT_TIMECODE "serato_2a"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
@@ -85,8 +86,9 @@ static void usage(FILE *fd)
       "  -u             Allow all operations when playing\n"
       "  --line         Line level signal (default)\n"
       "  --phono        Tolerate cartridge level signal ('software pre-amp')\n"
+      "  --cue <program>  Cue point loader (default '%s')\n"
       "  -i <program>   Importer (default '%s')\n\n",
-      DEFAULT_IMPORTER);
+      DEFAULT_CUELOADER, DEFAULT_IMPORTER);
 
 #ifdef WITH_OSS
     fprintf(fd, "OSS device options:\n"
@@ -128,7 +130,7 @@ static void usage(FILE *fd)
 int main(int argc, char *argv[])
 {
     int rc = -1, n, priority;
-    const char *importer, *scanner, *geo;
+    const char *importer, *scanner, *cueloader, *geo;
     char *endptr;
     size_t nctl;
     double speed;
@@ -167,6 +169,7 @@ int main(int argc, char *argv[])
     priority = DEFAULT_PRIORITY;
     importer = DEFAULT_IMPORTER;
     scanner = DEFAULT_SCANNER;
+    cueloader = DEFAULT_CUELOADER;
     timecode = NULL;
     speed = 1.0;
     protect = false;
@@ -312,6 +315,7 @@ int main(int argc, char *argv[])
             device = &ld->device;
             timecoder = &ld->timecoder;
             ld->importer = importer;
+            ld->cueloader = cueloader;
             ld->protect = protect;
 
             /* Work out which device type we are using, and initialise
@@ -483,6 +487,21 @@ int main(int argc, char *argv[])
             }
 
             importer = argv[1];
+
+            argv += 2;
+            argc -= 2;
+
+        } else if (!strcmp(argv[0], "--cue")) {
+
+            /* Cue loader script for subsequent decks */
+
+            if (argc < 2) {
+                fprintf(stderr, "--cue requires an executable path "
+                        "as an argument.\n");
+                return -1;
+            }
+
+            cueloader = argv[1];
 
             argv += 2;
             argc -= 2;

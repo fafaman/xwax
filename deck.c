@@ -89,6 +89,7 @@ bool deck_is_locked(const struct deck *deck)
 void deck_load(struct deck *deck, struct record *record)
 {
     struct track *t;
+    struct cues *q;
 
     if (deck_is_locked(deck)) {
         status_printf(STATUS_WARN, "Stop deck to load a different track");
@@ -97,6 +98,10 @@ void deck_load(struct deck *deck, struct record *record)
 
     t = track_acquire_by_import(deck->importer, record->pathname);
     if (t == NULL)
+        return;
+
+    q = cues_set_by_cueloader(deck->cueloader, record->pathname);
+    if (q == NULL)
         return;
 
     deck->record = record;

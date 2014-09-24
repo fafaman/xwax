@@ -41,7 +41,7 @@ DOCDIR ?= $(PREFIX)/share/doc
 
 CFLAGS ?= -O3
 CFLAGS += -Wall
-CPPFLAGS += -MMD
+CPPFLAGS += -MMD -DDEBUG
 LDFLAGS ?= -O3
 
 # Core objects and libraries
@@ -160,11 +160,13 @@ TAGS:		$(OBJS:.o=.c)
 tests:		$(TESTS)
 tests:		CPPFLAGS += -I.
 
-tests/cues:	tests/cues.o cues.o
+tests/cues:	tests/cues.o cues.o external.o rig.o status.o thread.o track.o excrate.o library.o index.o
+tests/cues:	LDFLAGS += -pthread
+tests/cues:	LDLIBS += -lm
 
 tests/external:	tests/external.o external.o
 
-tests/library:	tests/library.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o
+tests/library:	tests/library.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o cues.o
 tests/library:	LDFLAGS += -pthread
 
 tests/midi:	tests/midi.o midi.o
@@ -176,7 +178,7 @@ tests/status:	tests/status.o status.o
 
 tests/timecoder:	tests/timecoder.o lut.o timecoder.o
 
-tests/track:	tests/track.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o
+tests/track:	tests/track.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o cues.o
 tests/track:	LDFLAGS += -pthread
 tests/track:	LDLIBS += -lm
 

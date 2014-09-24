@@ -22,6 +22,10 @@
 
 #include <math.h>
 
+#include "external.h"
+#include "list.h"
+#include "library.h"
+
 #define MAX_CUES 16
 #define CUE_UNSET (HUGE_VAL)
 
@@ -30,7 +34,24 @@
  */
 
 struct cues {
+    struct list cuess;
+    unsigned int refcount;
+
     double position[MAX_CUES];
+
+    struct event completion;
+   /* State of cues loading */
+
+    struct list rig;
+    pid_t pid;
+    int fd;
+    struct pollfd *pe;
+    bool terminated;
+    unsigned int index;
+
+    /* State of reader */
+
+    struct rb rb;
 };
 
 void cues_reset(struct cues *q);
@@ -40,5 +61,8 @@ void cues_set(struct cues *q, unsigned int label, double position);
 double cues_get(const struct cues *q, unsigned int label);
 double cues_prev(const struct cues *q, double current);
 double cues_next(const struct cues *q, double current);
-
+struct cues* cues_set_by_cueloader(const char *cueloader, const char *path);
+void cues_acquire(struct cues *q);
+void cues_pollfd(struct cues *q, struct pollfd *pe);
+void cues_handle(struct cues *q);
 #endif

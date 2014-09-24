@@ -34,7 +34,7 @@
 struct deck {
     struct device device;
     struct timecoder timecoder;
-    const char *importer;
+    const char *importer, *cueloader;
     bool protect;
 
     struct player player;

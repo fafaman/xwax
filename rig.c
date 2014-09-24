@@ -38,6 +38,7 @@
 
 static int event[2]; /* pipe to wake up service thread */
 static struct list tracks = LIST_INIT(tracks),
+    cuess = LIST_INIT(cuess),
     excrates = LIST_INIT(excrates);
 mutex lock;
 
@@ -105,6 +106,7 @@ int rig_main()
         struct pollfd *pe;
         struct track *track, *xtrack;
         struct excrate *excrate, *xexcrate;
+        struct cues *cues, *xcues;
 
         pe = &pt[1];
 
@@ -121,6 +123,13 @@ int rig_main()
             if (pe == px)
                 break;
             excrate_pollfd(excrate, pe);
+            pe++;
+        }
+
+        list_for_each(cues, &cuess, rig) {
+            if (pe == px)
+                break;
+            cues_pollfd(cues, pe);
             pe++;
         }
 
@@ -174,6 +183,9 @@ int rig_main()
 
         list_for_each_safe(excrate, xexcrate, &excrates, rig)
             excrate_handle(excrate);
+
+        list_for_each_safe(cues, xcues, &cuess, rig)
+            cues_handle(cues);
     }
  finish:
 
@@ -233,3 +245,9 @@ void rig_post_excrate(struct excrate *e)
     post_event(EVENT_WAKE);
 }
 
+void rig_post_cues(struct cues *q)
+{
+    cues_acquire(q);
+    list_add(&q->rig, &cuess);
+    post_event(EVENT_WAKE);
+}
