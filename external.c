@@ -201,6 +201,37 @@ fail:
     return -1;
 }
 
+pid_t fork_pipe_nb_ar(int *fd, const char *path, char *arg[])
+{
+    int pp[2];
+    pid_t r;
+
+    if (pipe(pp) == -1) {
+        perror("pipe");
+        return -1;
+    }
+
+    if (make_non_blocking(pp[0]) == -1)
+        goto fail;
+
+    r = do_fork(pp, path, arg);
+
+    assert(r != 0);
+    if (r < 0)
+        goto fail;
+
+    *fd = pp[0];
+    return r;
+
+fail:
+    if (close(pp[0]) != 0)
+        abort();
+    if (close(pp[1]) != 0)
+        abort();
+
+    return -1;
+}
+
 void rb_reset(struct rb *rb)
 {
     rb->len = 0;

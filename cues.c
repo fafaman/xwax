@@ -110,16 +110,55 @@ double cues_next(const struct cues *q, double current)
     return r;
 }
 
+static void cues_string_free(char **p, int offset)
+{
+    char **a = p + offset;
+
+    while (*a) {
+        free(*a);
+        a++;
+    }
+}
+
+static void cues_string(struct cues *q, char **p)
+{
+    int n;
+    char **a = p;
+
+    while (*a)
+        a++;
+    
+    for (n = 0; n < MAX_CUES; n++) {
+
+        if ((*a = malloc(15)) == NULL)
+            return;
+
+        if (q->position[n] == CUE_UNSET) 
+            sprintf(*a, "-");
+        else 
+            sprintf(*a, "%lf", q->position[n]);
+
+        a++;
+    }
+    *a = NULL;
+}
+
 static int cues_init(struct cues *q, const char *cueloader, const char *path, const char *cmd)
 {
     pid_t pid;
+    char *p[30] = {"cueloader", cmd, path, NULL};
 
-    fprintf(stderr, "Loading cues for '%s'...\n", path);
+    fprintf(stderr, "%sing cues for '%s'...\n", cmd, path);
 
-    pid = fork_pipe_nb(&q->fd, cueloader, "cueloader", cmd, path, NULL);
+    cues_string(q,p);
+
+    pid = fork_pipe_nb_ar(&q->fd, cueloader, p);
+
+    cues_string_free(p,3);
+
     if (pid == -1)
         return -1;
-    
+
     q->pid = pid;
     q->pe = NULL;
     q->terminated = false;
@@ -165,8 +204,11 @@ double get_cue_point(const char *s)
     char *endptr;
     double point;
 
-    if (s[0] == '\0') /* empty string, valid for 'unset cuepoint' */
+    if (s[0] == '-') /* dash is explicit cuepoint unset */
         return CUE_UNSET;
+
+    if (s[0] == '\0') /* empty string is unchanged cuepoint */
+        return -1;
 
     errno = 0;
     point = strtod(s, &endptr);
@@ -200,9 +242,10 @@ static int read_from_pipe(struct cues *q)
         debug("cues got line '%s'", line);
 
         p = get_cue_point(line);
-        if (p == -1) { /* not sure this is wise */
+        if (p == -1) { 
             free(line);
-            continue; /* ignore malformed entries */
+            q->index++;
+            continue; 
         }
         
         q->position[q->index] = p;
@@ -227,11 +270,11 @@ static void do_wait(struct cues *q)
     debug("wait for pid %d returned %d", q->pid, status);
 
     if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS) {
-        fprintf(stderr, "Cue loading completed\n");
+        fprintf(stderr, "Cue loading/saving completed\n");
     } else {
-        fprintf(stderr, "Cue loading completed with status %d\n", status);
+        fprintf(stderr, "Cue loading/saving completed with status %d\n", status);
         if (!q->terminated)
-            status_printf(STATUS_ALERT, "Error loading cues");
+            status_printf(STATUS_ALERT, "Error loading/saving cues");
     }
 
     q->pid = 0;
