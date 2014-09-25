@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# Take a pathname as an argument and output a list of cuepoint positions
+#
+# The output format is repeated sequences of:
+#
+#   [s]s.xxx\n
+#
+
+set -eu -o pipefail  # pipefail requires bash, not sh
+
+ACTION="$1"
+shift
+PATHNAME="$1"
+shift
+
+CUEFILE=$PATHNAME".cue"
+
+case $ACTION in 
+
+    "SAVE")
+        rm -f $CUEFILE
+        touch $CUEFILE
+        while (( "$#" )); do
+            CUEPOINT="$1"
+            echo $CUEPOINT >> $CUEFILE
+            shift
+        done 
+        ;;
+
+    "LOAD")
+        if [ -f $CUEFILE ];
+        then 
+            cat $CUEFILE
+        fi
+        ;;
+esac
