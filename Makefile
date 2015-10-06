@@ -41,7 +41,7 @@ DOCDIR ?= $(PREFIX)/share/doc
 
 CFLAGS ?= -O3
 CFLAGS += -Wall
-CPPFLAGS += -MMD -DDEBUG
+CPPFLAGS += -MMD
 LDFLAGS ?= -O3
 
 # Core objects and libraries
