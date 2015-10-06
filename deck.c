@@ -45,7 +45,8 @@ static const struct record no_record = {
  */
 
 int deck_init(struct deck *d, struct rt *rt,
-              struct timecode_def *timecode, const char *importer,
+              struct timecode_def *timecode, 
+              const char *importer, const char *cueloader,
               double speed, bool phono, bool protect)
 {
     unsigned int rate;
@@ -59,6 +60,7 @@ int deck_init(struct deck *d, struct rt *rt,
     d->protect = protect;
     assert(importer != NULL);
     d->importer = importer;
+    d->cueloader = cueloader;
     rate = device_sample_rate(&d->device);
     assert(timecode != NULL);
     timecoder_init(&d->timecoder, timecode, speed, rate, phono);

@@ -52,7 +52,8 @@ struct deck {
 };
 
 int deck_init(struct deck *deck, struct rt *rt,
-              struct timecode_def *timecode, const char *importer,
+              struct timecode_def *timecode, 
+              const char *importer, const char *cueloader,
               double speed, bool phono, bool protect);
 void deck_clear(struct deck *deck);
 

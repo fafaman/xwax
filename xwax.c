@@ -70,7 +70,7 @@ static struct rt rt;
 
 static double speed;
 static bool protect, phono;
-static const char *importer;
+static const char *importer, *cueloader;
 static struct timecode_def *timecode;
 
 static void usage(FILE *fd)
@@ -168,7 +168,7 @@ static int commit_deck(void)
 
     d = &deck[ndeck];
 
-    r = deck_init(d, &rt, timecode, importer, speed, phono, protect);
+    r = deck_init(d, &rt, timecode, importer, cueloader, speed, phono, protect);
     if (r == -1)
         return -1;
 
@@ -185,7 +185,7 @@ static int commit_deck(void)
 int main(int argc, char *argv[])
 {
     int rc = -1, n, priority;
-    const char *importer, *scanner, *cueloader, *geo;
+    const char *scanner, *geo;
     char *endptr;
     bool use_mlock, decor;
 
@@ -339,8 +339,8 @@ int main(int argc, char *argv[])
 #endif
 
         } else if (!strcmp(argv[0], "-d") || !strcmp(argv[0], "-a") ||
-		  !strcmp(argv[0], "-j"))
-	{
+                   !strcmp(argv[0], "-j"))
+        {
             int r;
             struct device *device;
 
@@ -355,16 +355,15 @@ int main(int argc, char *argv[])
             device = start_deck(argv[1]);
             if (device == NULL)
                 return -1;
-            }
 
-            fprintf(stderr, "Initialising deck %zd (%s)...\n", ndeck, argv[1]);
-
-            ld = &deck[ndeck];
-            device = &ld->device;
-            timecoder = &ld->timecoder;
-            ld->importer = importer;
-            ld->cueloader = cueloader;
-            ld->protect = protect;
+            /*
+            //ld = &deck[ndeck];
+            //device = &ld->device;
+            //timecoder = &ld->timecoder;
+            //ld->importer = importer;
+            //ld->cueloader = cueloader;
+            //ld->protect = protect;
+            */
 
             /* Work out which device type we are using, and initialise
              * an appropriate device. */
