@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Mark Hills <mark@xwax.org>
+ * Copyright (C) 2015 Mark Hills <mark@xwax.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -168,6 +168,7 @@ static unsigned short *spinner_angle, spinner_size;
 
 static int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT,
     meter_scale = DEFAULT_METER_SCALE;
+static Uint32 video_flags = SDL_RESIZABLE;
 static float scale = DEFAULT_SCALE;
 static pthread_t ph;
 static struct selector selector;
@@ -1513,7 +1514,7 @@ static SDL_Surface* set_size(int w, int h, struct rect *r)
 {
     SDL_Surface *surface;
 
-    surface = SDL_SetVideoMode(w, h, 32, SDL_RESIZABLE);
+    surface = SDL_SetVideoMode(w, h, 32, video_flags);
     if (surface == NULL) {
         fprintf(stderr, "%s\n", SDL_GetError());
         return NULL;
@@ -1795,7 +1796,7 @@ static int parse_geometry(const char *s)
  * error
  */
 
-int interface_start(struct library *lib, const char *geo)
+int interface_start(struct library *lib, const char *geo, bool decor)
 {
     size_t n;
 
@@ -1803,6 +1804,9 @@ int interface_start(struct library *lib, const char *geo)
         fprintf(stderr, "Window geometry ('%s') is not valid.\n", geo);
         return -1;
     }
+
+    if (!decor)
+        video_flags |= SDL_NOFRAME;
 
     for (n = 0; n < ndeck; n++) {
         if (timecoder_monitor_init(&deck[n].timecoder, zoom(SCOPE_SIZE)) == -1)

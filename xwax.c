@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Mark Hills <mark@xwax.org>
+ * Copyright (C) 2015 Mark Hills <mark@xwax.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "controller.h"
 #include "device.h"
 #include "dicer.h"
+#include "dummy.h"
 #include "interface.h"
 #include "jack.h"
 #include "library.h"
@@ -57,10 +58,20 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
 char *banner = "xwax " VERSION \
-    " (C) Copyright 2014 Mark Hills <mark@xwax.org>";
+    " (C) Copyright 2015 Mark Hills <mark@xwax.org>";
 
 size_t ndeck;
 struct deck deck[3];
+
+static size_t nctl;
+static struct controller ctl[2];
+
+static struct rt rt;
+
+static double speed;
+static bool protect, phono;
+static const char *importer;
+static struct timecode_def *timecode;
 
 static void usage(FILE *fd)
 {
@@ -70,6 +81,7 @@ static void usage(FILE *fd)
       "  -k             Lock real-time memory into RAM\n"
       "  -q <n>         Real-time priority (0 for no priority, default %d)\n"
       "  -g <s>         Set display geometry (see man page)\n"
+      "  --no-decor     Request a window with no decorations\n"
       "  -h             Display this message to stdout and exit\n\n",
       DEFAULT_PRIORITY);
 
@@ -87,7 +99,8 @@ static void usage(FILE *fd)
       "  --line         Line level signal (default)\n"
       "  --phono        Tolerate cartridge level signal ('software pre-amp')\n"
       "  --cue <program>  Cue point loader (default '%s')\n"
-      "  -i <program>   Importer (default '%s')\n\n",
+      "  -i <program>   Importer (default '%s')\n"
+      "  --dummy        Build a dummy deck with no audio device\n\n",
       DEFAULT_CUELOADER, DEFAULT_IMPORTER);
 
 #ifdef WITH_OSS
@@ -127,18 +140,55 @@ static void usage(FILE *fd)
       "See the xwax(1) man page for full information and examples.\n");
 }
 
+static struct device* start_deck(const char *desc)
+{
+    fprintf(stderr, "Initialising deck %zd (%s)...\n", ndeck, desc);
+
+    if (ndeck == ARRAY_SIZE(deck)) {
+        fprintf(stderr, "Too many decks.\n");
+        return NULL;
+    }
+
+    return &deck[ndeck].device;
+}
+
+static int commit_deck(void)
+{
+    int r;
+    struct deck *d;
+    size_t n;
+
+    /* Fallback to a default timecode. Don't initialise this at the
+     * front of the program to avoid buildling unnecessary LUTs */
+
+    if (timecode == NULL) {
+        timecode = timecoder_find_definition(DEFAULT_TIMECODE);
+        assert(timecode != NULL);
+    }
+
+    d = &deck[ndeck];
+
+    r = deck_init(d, &rt, timecode, importer, speed, phono, protect);
+    if (r == -1)
+        return -1;
+
+    /* Connect this deck to available controllers */
+
+    for (n = 0; n < nctl; n++)
+        controller_add_deck(&ctl[n], d);
+
+    ndeck++;
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int rc = -1, n, priority;
     const char *importer, *scanner, *cueloader, *geo;
     char *endptr;
-    size_t nctl;
-    double speed;
-    struct timecode_def *timecode;
-    bool protect, use_mlock, phono;
+    bool use_mlock, decor;
 
-    struct controller ctl[2];
-    struct rt rt;
     struct library library;
 
 #if defined WITH_OSS || WITH_ALSA
@@ -165,6 +215,7 @@ int main(int argc, char *argv[])
 
     ndeck = 0;
     geo = "";
+    decor = true;
     nctl = 0;
     priority = DEFAULT_PRIORITY;
     importer = DEFAULT_IMPORTER;
@@ -291,10 +342,7 @@ int main(int argc, char *argv[])
 		  !strcmp(argv[0], "-j"))
 	{
             int r;
-            unsigned int sample_rate;
-            struct deck *ld;
             struct device *device;
-            struct timecoder *timecoder;
 
             /* Create a deck */
 
@@ -304,8 +352,8 @@ int main(int argc, char *argv[])
                 return -1;
             }
 
-            if (ndeck == ARRAY_SIZE(deck)) {
-                fprintf(stderr, "Too many decks; aborting.\n");
+            device = start_deck(argv[1]);
+            if (device == NULL)
                 return -1;
             }
 
@@ -347,32 +395,24 @@ int main(int argc, char *argv[])
             if (r == -1)
                 return -1;
 
-	    sample_rate = device_sample_rate(device);
-
-            /* Default timecode decoder where none is specified */
-
-            if (timecode == NULL) {
-                timecode = timecoder_find_definition(DEFAULT_TIMECODE);
-                assert(timecode != NULL);
-            }
-
-            timecoder_init(timecoder, timecode, speed, sample_rate, phono);
-
-            /* Connect up the elements to make an operational deck */
-
-            r = deck_init(ld, &rt);
-            if (r == -1)
-                return -1;
-
-            /* Connect this deck to available controllers */
-
-            for (n = 0; n < nctl; n++)
-                controller_add_deck(&ctl[n], &deck[ndeck]);
-
-            ndeck++;
+            commit_deck();
 
             argv += 2;
             argc -= 2;
+
+        } else if (!strcmp(argv[0], "--dummy")) {
+
+            struct device *v;
+
+            v = start_deck("dummy");
+            if (v == NULL)
+                return -1;
+
+            dummy_init(v);
+            commit_deck();
+
+            argv++;
+            argc--;
 
         } else if (!strcmp(argv[0], "-t")) {
 
@@ -476,6 +516,13 @@ int main(int argc, char *argv[])
             argv += 2;
             argc -= 2;
 
+        } else if (!strcmp(argv[0], "--no-decor")) {
+
+            decor = false;
+
+            argv++;
+            argc--;
+
         } else if (!strcmp(argv[0], "-i")) {
 
             /* Importer script for subsequent decks */
@@ -526,8 +573,7 @@ int main(int argc, char *argv[])
             /* Load in a music library */
 
             if (argc < 2) {
-                fprintf(stderr, "-%c requires a pathname as an argument.\n",
-                        argv[0][1]);
+                fprintf(stderr, "-l requires a pathname as an argument.\n");
                 return -1;
             }
 
@@ -592,7 +638,7 @@ int main(int argc, char *argv[])
         goto out_rt;
     }
 
-    if (interface_start(&library, geo) == -1)
+    if (interface_start(&library, geo, decor) == -1)
         goto out_rt;
 
     if (rig_main() == -1)

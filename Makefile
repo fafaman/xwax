@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Mark Hills <mark@xwax.org>
+# Copyright (C) 2015 Mark Hills <mark@xwax.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2, as
@@ -50,6 +50,7 @@ OBJS = controller.o \
 	cues.o \
 	deck.o \
 	device.o \
+	dummy.o \
 	excrate.o \
 	external.o \
 	index.o \

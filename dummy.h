@@ -17,12 +17,11 @@
  *
  */
 
-#ifndef OSS_H
-#define OSS_H
+#ifndef DUMMY_H
+#define DUMMY_H
 
 #include "device.h"
 
-int oss_init(struct device *dv, const char *filename, unsigned int rate,
-             unsigned short buffers, unsigned short fragment);
+void dummy_init(struct device *d);
 
 #endif

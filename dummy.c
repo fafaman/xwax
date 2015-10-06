@@ -17,12 +17,18 @@
  *
  */
 
-#ifndef OSS_H
-#define OSS_H
+#include "dummy.h"
 
-#include "device.h"
+static unsigned int sample_rate(struct device *d)
+{
+    return 48000;
+}
 
-int oss_init(struct device *dv, const char *filename, unsigned int rate,
-             unsigned short buffers, unsigned short fragment);
+static struct device_ops dummy_ops = {
+    .sample_rate = sample_rate,
+};
 
-#endif
+void dummy_init(struct device *d)
+{
+    device_init(d, &dummy_ops);
+}

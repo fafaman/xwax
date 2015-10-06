@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Mark Hills <mark@xwax.org>
+ * Copyright (C) 2015 Mark Hills <mark@xwax.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
  *
  */
 
-#define _BSD_SOURCE /* vfork() */
+#define _DEFAULT_SOURCE /* vfork() */
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
