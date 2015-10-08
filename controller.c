@@ -43,6 +43,19 @@ void controller_clear(struct controller *c)
     c->ops->clear(c);
 }
 
+void controller_update(struct deck *d)
+{
+    size_t n;
+    struct controller *c;
+
+    debug("%p", d);
+    for (n = 0; n < d->ncontrol; n++) {
+      c = d->control[n];
+      c->ops->update(c, d);
+    }
+
+}
+
 /*
  * Add a deck to this controller, if possible
  */

@@ -298,12 +298,8 @@ static void event_decoded(struct deck *d, led_t led[NBUTTONS],
         set_led(&led[button], 0, PRESSED);
     }
 
-    /* FIXME: We assume that we are the only operator of the cue
-     * points; we should change the LEDs via a callback from deck */
-
     if (shift && on) {
         deck_unset_cue(d, button);
-        set_led(&led[button], 0, ON);
     }
 
     if (shift)
@@ -311,13 +307,11 @@ static void event_decoded(struct deck *d, led_t led[NBUTTONS],
 
     if (action == CUE && on) {
         deck_cue(d, button);
-        set_led(&led[button], ON, 0);
     }
 
     if (action == LOOP) {
         if (on) {
             deck_punch_in(d, button);
-            set_led(&led[button], ON, 0);
         } else {
             deck_punch_out(d);
         }
@@ -445,6 +439,36 @@ static int realtime(struct controller *c)
     return 0;
 }
 
+
+static void update(struct controller *c, struct deck *k)
+{
+    size_t button;
+    struct dicer *d = c->local;
+
+    for (button = 0; button < NBUTTONS; button++) {
+        
+        if (deck_get_cue(k, button) == CUE_UNSET) {
+
+            if (k == d->left)
+                set_led(&d->left_led[button], 0, ON);
+
+            if (k == d->right)
+                set_led(&d->right_led[button], 0, ON);
+        }
+        else {
+
+            if (k == d->left)
+                set_led(&d->left_led[button], ON, 0);
+
+            if (k == d->right)
+                set_led(&d->right_led[button], ON, 0);
+        }
+        
+    }
+    sync_all_leds(d);
+
+}
+
 static void clear(struct controller *c)
 {
     struct dicer *d = c->local;
@@ -470,6 +494,7 @@ static struct controller_ops dicer_ops = {
     .pollfds = pollfds,
     .realtime = realtime,
     .clear = clear,
+    .update = update,
 };
 
 int dicer_init(struct controller *c, struct rt *rt, const char *hw)
