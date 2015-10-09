@@ -356,15 +356,6 @@ int main(int argc, char *argv[])
             if (device == NULL)
                 return -1;
 
-            /*
-            //ld = &deck[ndeck];
-            //device = &ld->device;
-            //timecoder = &ld->timecoder;
-            //ld->importer = importer;
-            //ld->cueloader = cueloader;
-            //ld->protect = protect;
-            */
-
             /* Work out which device type we are using, and initialise
              * an appropriate device. */
 
