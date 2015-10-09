@@ -138,7 +138,7 @@ static ssize_t led_cmd(led_t led, char *buf, size_t len,
         buf[2] += 0xa;
     if (led & PRESSED)
         buf[2] += 0x5;
-
+    
     debug("compiling LED command: %02hhx %02hhx %02hhx",
           buf[0], buf[1], buf[2]);
 
@@ -444,6 +444,8 @@ static void update(struct controller *c, struct deck *k)
 {
     size_t button;
     struct dicer *d = c->local;
+
+    debug("dicer update");
 
     for (button = 0; button < NBUTTONS; button++) {
         

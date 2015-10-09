@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 
 #include "debug.h"
+#include "controller.h"
 #include "status.h"
 #include "cues.h"
 #include "rig.h"
@@ -212,7 +213,7 @@ double get_cue_point(const char *s)
 
     errno = 0;
     point = strtod(s, &endptr);
-    if (errno == ERANGE || *endptr != '\0' || !isfinite(point) || point <= 0.0)
+    if (errno == ERANGE || *endptr != '\0' || !isfinite(point) || point < 0.0)
         return CUE_UNSET;
 
     return point;
@@ -225,7 +226,7 @@ static int read_from_pipe(struct cues *q)
         ssize_t z;
         double p;
 
-        if (q->index > MAX_CUES) 
+        if (q->index >= MAX_CUES) 
             return -1; /* stop loading anything when all cues set */
 
         z = get_line(q->fd, &q->rb, &line);
@@ -249,6 +250,7 @@ static int read_from_pipe(struct cues *q)
         }
         
         q->position[q->index] = p;
+        debug("cue[%d] = %lf", q->index, q->position[q->index]);
         q->index++;
 
     }
@@ -271,6 +273,7 @@ static void do_wait(struct cues *q)
 
     if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS) {
         fprintf(stderr, "Cue loading/saving completed\n");
+        controller_update(q->deck);
     } else {
         fprintf(stderr, "Cue loading/saving completed with status %d\n", status);
         if (!q->terminated)

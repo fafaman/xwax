@@ -66,6 +66,7 @@ int deck_init(struct deck *d, struct rt *rt,
     timecoder_init(&d->timecoder, timecode, speed, rate, phono);
     player_init(&d->player, rate, track_acquire_empty(), &d->timecoder);
     cues_reset(&d->cues);
+    d->cues.deck = d;
 
     /* The timecoder and player are driven by requests from
      * the audio device */
@@ -107,7 +108,7 @@ void deck_load(struct deck *d, struct record *record)
         return;
 
     cues_set_by_cueloader(&d->cues, d->cueloader, record->pathname);
-    controller_update(d);
+
     d->record = record;
     player_set_track(&d->player, t); /* passes reference */
 }

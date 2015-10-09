@@ -34,6 +34,7 @@
  */
 
 struct cues {
+    struct deck *deck;
     struct list cuess;
     unsigned int refcount;
 

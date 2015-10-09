@@ -1,11 +1,28 @@
 #!/bin/bash
 #
-# Take a pathname as an argument and output a list of cuepoint positions
+# SCRIPT USAGE:
 #
-# The output format is repeated sequences of:
+# cueloader <SAVE|LOAD> <path/to/audiofile> [cuepoint, cuepoint, ...]
 #
-#   [s]s.xxx\n
+# on SAVE this script will create path/to/audiofile.cue and fill it with cuepoint values
+# on LOAD this script will pass path/to/audiofile.cue content to Xwax.
 #
+# XWAX BEHAVIOR:
+#
+# The LOAD or SAVE command issued by Xwax is for the cueloader script usage only: Xwax will  always parse and load cuepoints regardless of the SAVE or LOAD command it issued. This can be used to create fancy cueloader scripts.
+# 
+# xwax interprets cuepoints passed to it the following way:
+#
+# valid cuepoint in seconds as a float:
+# [...s]s.m[m...]\n 
+#
+# or explicitly unsetted cuepoint:
+# -\n
+# 
+# or ignore this cuepoint (an already loaded cuepoint is not changed):
+# \n
+#
+# 
 
 set -eu -o pipefail  # pipefail requires bash, not sh
 
