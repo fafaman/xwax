@@ -31,24 +31,24 @@ shift
 PATHNAME="$1"
 shift
 
-CUEFILE=$PATHNAME".cue"
+CUEFILE="${PATHNAME}.cue"
 
 case $ACTION in 
 
     "SAVE")
-        rm -f $CUEFILE
-        touch $CUEFILE
+        rm -f "$CUEFILE"
+        touch "$CUEFILE"
         while (( "$#" )); do
             CUEPOINT="$1"
-            echo $CUEPOINT >> $CUEFILE
+            echo $CUEPOINT >> "$CUEFILE"
             shift
         done 
         ;;
 
     "LOAD")
-        if [ -f $CUEFILE ];
+        if [ -f "$CUEFILE" ];
         then 
-            cat $CUEFILE
+            cat "$CUEFILE"
         fi
         ;;
 esac
