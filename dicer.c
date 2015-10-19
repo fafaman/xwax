@@ -105,7 +105,7 @@ static ssize_t led_cmd(led_t led, char *buf, size_t len,
                        bool right, unsigned char action,
                        bool shift, unsigned char button)
 {
-    if (len < 3)
+    if (len < 3) 
         return -1;
 
     assert(action <= ROLL);
@@ -433,7 +433,6 @@ static int realtime(struct controller *c)
 
         event(d, buf);
     }
-
     sync_all_leds(d);
 
     return 0;
@@ -467,7 +466,6 @@ static void update(struct controller *c, struct deck *k)
         }
         
     }
-    sync_all_leds(d);
 
 }
 
@@ -476,7 +474,7 @@ static void clear(struct controller *c)
     struct dicer *d = c->local;
     size_t n;
 
-    debug("%p", d);
+    debug("clear(): %p", d);
 
     /* FIXME: Uses non-blocking functionality really intended
      * for realtime; no guarantee buffer is emptied */
@@ -496,7 +494,7 @@ static struct controller_ops dicer_ops = {
     .pollfds = pollfds,
     .realtime = realtime,
     .clear = clear,
-    .update = update,
+    .update = update
 };
 
 int dicer_init(struct controller *c, struct rt *rt, const char *hw)

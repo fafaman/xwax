@@ -111,9 +111,9 @@ double cues_next(const struct cues *q, double current)
     return r;
 }
 
-static void cues_string_free(char **p, int offset)
+static void cues_string_free(char **p)
 {
-    char **a = p + offset;
+    char **a = p + 3;
 
     while (*a) {
         free(*a);
@@ -121,18 +121,24 @@ static void cues_string_free(char **p, int offset)
     }
 }
 
-static void cues_string(struct cues *q, char **p)
+static int cues_string(struct cues *q, char **p, const char *path, const char *cmd )
 {
     int n;
     char **a = p;
 
-    while (*a)
-        a++;
+    *a = "cueloader";
+    a++;
+
+    *a = (char*)cmd;
+    a++;
     
+    *a = (char*)path;
+    a++;
+
     for (n = 0; n < MAX_CUES; n++) {
 
         if ((*a = malloc(15)) == NULL)
-            return;
+            return -1;
 
         if (q->position[n] == CUE_UNSET) 
             sprintf(*a, "-");
@@ -142,20 +148,27 @@ static void cues_string(struct cues *q, char **p)
         a++;
     }
     *a = NULL;
+    return 0;
 }
 
 static int cues_init(struct cues *q, const char *cueloader, const char *path, const char *cmd)
 {
     pid_t pid;
-    char *p[30] = {"cueloader", cmd, path, NULL};
+    char *p[30];
+    int r;
+
+    if (q->pid != 0)
+        return -1;
 
     fprintf(stderr, "%sing cues for '%s'...\n", cmd, path);
 
-    cues_string(q,p);
+    r = cues_string(q, p, path, cmd);
+    if (r == -1)
+        return -1;
 
     pid = fork_pipe_nb_ar(&q->fd, cueloader, p);
 
-    cues_string_free(p,3);
+    cues_string_free(p);
 
     if (pid == -1)
         return -1;

@@ -45,12 +45,10 @@ struct controller {
 
 struct controller_ops {
     int (*add_deck)(struct controller *c, struct deck *deck);
-    void (*update)(struct controller *c, struct deck *k);
-
     ssize_t (*pollfds)(struct controller *c, struct pollfd *pe, size_t z);
     int (*realtime)(struct controller *c);
-
     void (*clear)(struct controller *c);
+    void (*update)(struct controller *c, struct deck *k);
 };
 
 int controller_init(struct controller *c, struct controller_ops *t,
