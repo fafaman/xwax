@@ -105,7 +105,7 @@ static ssize_t led_cmd(led_t led, char *buf, size_t len,
                        bool right, unsigned char action,
                        bool shift, unsigned char button)
 {
-    if (len < 3)
+    if (len < 3) 
         return -1;
 
     assert(action <= ROLL);
@@ -138,7 +138,7 @@ static ssize_t led_cmd(led_t led, char *buf, size_t len,
         buf[2] += 0xa;
     if (led & PRESSED)
         buf[2] += 0x5;
-
+    
     debug("compiling LED command: %02hhx %02hhx %02hhx",
           buf[0], buf[1], buf[2]);
 
@@ -298,12 +298,8 @@ static void event_decoded(struct deck *d, led_t led[NBUTTONS],
         set_led(&led[button], 0, PRESSED);
     }
 
-    /* FIXME: We assume that we are the only operator of the cue
-     * points; we should change the LEDs via a callback from deck */
-
     if (shift && on) {
         deck_unset_cue(d, button);
-        set_led(&led[button], 0, ON);
     }
 
     if (shift)
@@ -311,13 +307,11 @@ static void event_decoded(struct deck *d, led_t led[NBUTTONS],
 
     if (action == CUE && on) {
         deck_cue(d, button);
-        set_led(&led[button], ON, 0);
     }
 
     if (action == LOOP) {
         if (on) {
             deck_punch_in(d, button);
-            set_led(&led[button], ON, 0);
         } else {
             deck_punch_out(d);
         }
@@ -439,10 +433,40 @@ static int realtime(struct controller *c)
 
         event(d, buf);
     }
-
     sync_all_leds(d);
 
     return 0;
+}
+
+
+static void update(struct controller *c, struct deck *k)
+{
+    size_t button;
+    struct dicer *d = c->local;
+
+    debug("dicer update");
+
+    for (button = 0; button < NBUTTONS; button++) {
+        
+        if (deck_get_cue(k, button) == CUE_UNSET) {
+
+            if (k == d->left)
+                set_led(&d->left_led[button], 0, ON);
+
+            if (k == d->right)
+                set_led(&d->right_led[button], 0, ON);
+        }
+        else {
+
+            if (k == d->left)
+                set_led(&d->left_led[button], ON, 0);
+
+            if (k == d->right)
+                set_led(&d->right_led[button], ON, 0);
+        }
+        
+    }
+
 }
 
 static void clear(struct controller *c)
@@ -450,7 +474,7 @@ static void clear(struct controller *c)
     struct dicer *d = c->local;
     size_t n;
 
-    debug("%p", d);
+    debug("clear(): %p", d);
 
     /* FIXME: Uses non-blocking functionality really intended
      * for realtime; no guarantee buffer is emptied */
@@ -470,6 +494,7 @@ static struct controller_ops dicer_ops = {
     .pollfds = pollfds,
     .realtime = realtime,
     .clear = clear,
+    .update = update
 };
 
 int dicer_init(struct controller *c, struct rt *rt, const char *hw)

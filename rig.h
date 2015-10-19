@@ -22,6 +22,7 @@
 
 #include "excrate.h"
 #include "track.h"
+#include "cues.h"
 
 int rig_init();
 void rig_clear();
@@ -35,5 +36,6 @@ void rig_unlock();
 
 void rig_post_track(struct track *t);
 void rig_post_excrate(struct excrate *e);
+void rig_post_cues(struct cues *q);
 
 #endif

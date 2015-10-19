@@ -52,6 +52,7 @@
 
 #define DEFAULT_IMPORTER EXECDIR "/xwax-import"
 #define DEFAULT_SCANNER EXECDIR "/xwax-scan"
+#define DEFAULT_CUELOADER EXECDIR "/xwax-cue"
 #define DEFAULT_TIMECODE "serato_2a"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
@@ -69,7 +70,7 @@ static struct rt rt;
 
 static double speed;
 static bool protect, phono;
-static const char *importer;
+static const char *importer, *cueloader;
 static struct timecode_def *timecode;
 
 static void usage(FILE *fd)
@@ -97,9 +98,10 @@ static void usage(FILE *fd)
       "  -u             Allow all operations when playing\n"
       "  --line         Line level signal (default)\n"
       "  --phono        Tolerate cartridge level signal ('software pre-amp')\n"
+      "  --cue <program>  Cue point loader (default '%s')\n"
       "  -i <program>   Importer (default '%s')\n"
       "  --dummy        Build a dummy deck with no audio device\n\n",
-      DEFAULT_IMPORTER);
+      DEFAULT_CUELOADER, DEFAULT_IMPORTER);
 
 #ifdef WITH_OSS
     fprintf(fd, "OSS device options:\n"
@@ -166,7 +168,7 @@ static int commit_deck(void)
 
     d = &deck[ndeck];
 
-    r = deck_init(d, &rt, timecode, importer, speed, phono, protect);
+    r = deck_init(d, &rt, timecode, importer, cueloader, speed, phono, protect);
     if (r == -1)
         return -1;
 
@@ -218,6 +220,7 @@ int main(int argc, char *argv[])
     priority = DEFAULT_PRIORITY;
     importer = DEFAULT_IMPORTER;
     scanner = DEFAULT_SCANNER;
+    cueloader = DEFAULT_CUELOADER;
     timecode = NULL;
     speed = 1.0;
     protect = false;
@@ -336,8 +339,8 @@ int main(int argc, char *argv[])
 #endif
 
         } else if (!strcmp(argv[0], "-d") || !strcmp(argv[0], "-a") ||
-		  !strcmp(argv[0], "-j"))
-	{
+                   !strcmp(argv[0], "-j"))
+        {
             int r;
             struct device *device;
 
@@ -521,6 +524,21 @@ int main(int argc, char *argv[])
             }
 
             importer = argv[1];
+
+            argv += 2;
+            argc -= 2;
+
+        } else if (!strcmp(argv[0], "--cue")) {
+
+            /* Cue loader script for subsequent decks */
+
+            if (argc < 2) {
+                fprintf(stderr, "--cue requires an executable path "
+                        "as an argument.\n");
+                return -1;
+            }
+
+            cueloader = argv[1];
 
             argv += 2;
             argc -= 2;

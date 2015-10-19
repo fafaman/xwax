@@ -42,6 +42,7 @@ DOCDIR ?= $(PREFIX)/share/doc
 CFLAGS ?= -O3
 CFLAGS += -Wall
 CPPFLAGS += -MMD
+#CPPFLAGS += -DDEBUG
 LDFLAGS ?= -O3
 
 # Core objects and libraries
@@ -137,6 +138,7 @@ mktimecode:	LDLIBS  += -lm
 .PHONY:		install
 install:
 		$(INSTALL) -D xwax $(DESTDIR)$(BINDIR)/xwax
+		$(INSTALL) -D cueloader $(DESTDIR)$(EXECDIR)/xwax-cue
 		$(INSTALL) -D scan $(DESTDIR)$(EXECDIR)/xwax-scan
 		$(INSTALL) -D import $(DESTDIR)$(EXECDIR)/xwax-import
 		$(INSTALL) -D -m 0644 xwax.1 $(DESTDIR)$(MANDIR)/man1/xwax.1
@@ -161,11 +163,13 @@ TAGS:		$(OBJS:.o=.c)
 tests:		$(TESTS)
 tests:		CPPFLAGS += -I.
 
-tests/cues:	tests/cues.o cues.o
+tests/cues:	tests/cues.o cues.o external.o rig.o status.o thread.o track.o excrate.o library.o index.o controller.o realtime.o device.o timecoder.o player.o lut.o
+tests/cues:	LDFLAGS += -pthread
+tests/cues:	LDLIBS += -lm
 
 tests/external:	tests/external.o external.o
 
-tests/library:	tests/library.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o
+tests/library:	tests/library.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o cues.o controller.o realtime.o device.o timecoder.o player.o lut.o
 tests/library:	LDFLAGS += -pthread
 
 tests/midi:	tests/midi.o midi.o
@@ -177,7 +181,7 @@ tests/status:	tests/status.o status.o
 
 tests/timecoder:	tests/timecoder.o lut.o timecoder.o
 
-tests/track:	tests/track.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o
+tests/track:	tests/track.o excrate.o external.o index.o library.o rig.o status.o thread.o track.o cues.o controller.o realtime.o device.o timecoder.o player.o lut.o
 tests/track:	LDFLAGS += -pthread
 tests/track:	LDLIBS += -lm
 

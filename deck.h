@@ -34,7 +34,7 @@
 struct deck {
     struct device device;
     struct timecoder timecoder;
-    const char *importer;
+    const char *importer, *cueloader;
     bool protect;
 
     struct player player;
@@ -52,7 +52,8 @@ struct deck {
 };
 
 int deck_init(struct deck *deck, struct rt *rt,
-              struct timecode_def *timecode, const char *importer,
+              struct timecode_def *timecode, 
+              const char *importer, const char *cueloader,
               double speed, bool phono, bool protect);
 void deck_clear(struct deck *deck);
 
@@ -63,8 +64,10 @@ void deck_load(struct deck *deck, struct record *record);
 void deck_recue(struct deck *deck);
 void deck_clone(struct deck *deck, const struct deck *from);
 void deck_unset_cue(struct deck *deck, unsigned int label);
+double deck_get_cue(struct deck *deck, unsigned int label);
 void deck_cue(struct deck *deck, unsigned int label);
 void deck_punch_in(struct deck *d, unsigned int label);
 void deck_punch_out(struct deck *d);
+void deck_save_cue(struct deck *d);
 
 #endif

@@ -45,7 +45,8 @@ static const struct record no_record = {
  */
 
 int deck_init(struct deck *d, struct rt *rt,
-              struct timecode_def *timecode, const char *importer,
+              struct timecode_def *timecode, 
+              const char *importer, const char *cueloader,
               double speed, bool phono, bool protect)
 {
     unsigned int rate;
@@ -59,11 +60,13 @@ int deck_init(struct deck *d, struct rt *rt,
     d->protect = protect;
     assert(importer != NULL);
     d->importer = importer;
+    d->cueloader = cueloader;
     rate = device_sample_rate(&d->device);
     assert(timecode != NULL);
     timecoder_init(&d->timecoder, timecode, speed, rate, phono);
     player_init(&d->player, rate, track_acquire_empty(), &d->timecoder);
     cues_reset(&d->cues);
+    d->cues.deck = d;
 
     /* The timecoder and player are driven by requests from
      * the audio device */
@@ -104,6 +107,8 @@ void deck_load(struct deck *d, struct record *record)
     if (t == NULL)
         return;
 
+    cues_set_by_cueloader(&d->cues, d->cueloader, record->pathname);
+
     d->record = record;
     player_set_track(&d->player, t); /* passes reference */
 }
@@ -131,8 +136,13 @@ void deck_clone(struct deck *d, const struct deck *from)
 void deck_unset_cue(struct deck *d, unsigned int label)
 {
     cues_unset(&d->cues, label);
+    controller_update(d);
 }
 
+double deck_get_cue(struct deck *d, unsigned int label)
+{
+    return cues_get(&d->cues, label);
+}
 /*
  * Seek the current playback position to a cue point position,
  * or set the cue point if unset
@@ -143,10 +153,13 @@ void deck_cue(struct deck *d, unsigned int label)
     double p;
 
     p = cues_get(&d->cues, label);
-    if (p == CUE_UNSET)
+    if (p == CUE_UNSET) {
         cues_set(&d->cues, label, player_get_elapsed(&d->player));
+        controller_update(d);
+    }
     else
         player_seek_to(&d->player, p);
+
 }
 
 /*
@@ -162,6 +175,7 @@ void deck_punch_in(struct deck *d, unsigned int label)
     p = cues_get(&d->cues, label);
     if (p == CUE_UNSET) {
         cues_set(&d->cues, label, e);
+        controller_update(d);
         return;
     }
 
@@ -186,4 +200,12 @@ void deck_punch_out(struct deck *d)
     e = player_get_elapsed(&d->player);
     player_seek_to(&d->player, e - d->punch);
     d->punch = NO_PUNCH;
+}
+
+void deck_save_cue(struct deck *d)
+{
+    if (d->record->pathname)
+        cues_save_by_cueloader(&d->cues, 
+                               d->cueloader, 
+                               d->record->pathname);
 }
