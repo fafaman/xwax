@@ -85,6 +85,9 @@
 
 #define CURSOR_WIDTH 4
 
+#define LIBRARY_HEIGHT 200
+#define MIN_CLOSEUP 48
+
 #define PLAYER_HEIGHT 213
 #define OVERVIEW_HEIGHT 16
 
@@ -923,24 +926,28 @@ static void draw_closeup(SDL_Surface *surface, const struct rect *rect,
     /* Draw in columns. This may seem like a performance hit,
      * but oprofile shows it makes no difference */
 
-    for (c = 0; c < w; c++) {
-        int r, sp, height, fade;
+    for (c = 0; c < h; c++) {
+        int r, sp, width, blank, fade;
         Uint8 *p;
         SDL_Color col;
 
         /* Work out the meter height in pixels for this column */
 
         sp = position - (position % (1 << scale))
-            + ((c - w / 2) << scale);
+            + ((c - h / 2) << scale);
 
-        if (sp < tr->length && sp > 0)
-            height = track_get_ppm(tr, sp) * h / 256;
-        else
-            height = 0;
+        if (sp < tr->length && sp > 0) {
+            width = track_get_ppm(tr, sp) * w / 254;
+            blank = (w - width) / 2;
+        }
+        else {
+            width = 0;
+            blank = w;
+        }
 
         /* Select the appropriate colour */
 
-        if (c == w / 2) {
+        if (c == h / 2) {
             col = needle_col;
             fade = 1;
         } else {
@@ -951,22 +958,29 @@ static void draw_closeup(SDL_Surface *surface, const struct rect *rect,
         /* Get a pointer to the top of the column, and increment
          * it for each row */
 
-        p = pixels + y * pitch + (x + c) * bytes_per_pixel;
+        p = pixels + (y + c) * pitch + x * bytes_per_pixel;
 
-        r = h;
-        while (r > height) {
+        r = 0;
+        while(r < blank) {
             p[0] = col.b >> fade;
             p[1] = col.g >> fade;
             p[2] = col.r >> fade;
-            p += pitch;
-            r--;
+            p += bytes_per_pixel;
+            r++;
         }
-        while (r) {
+        while(r < width + blank) {
             p[0] = col.b;
             p[1] = col.g;
             p[2] = col.r;
-            p += pitch;
-            r--;
+            p += bytes_per_pixel;
+            r++;
+        }
+        while(r < w) {
+            p[0] = col.b >> fade;
+            p[1] = col.g >> fade;
+            p[2] = col.r >> fade;
+            p += bytes_per_pixel;
+            r++;
         }
     }
 }
@@ -982,7 +996,7 @@ static void draw_meters(SDL_Surface *surface, const struct rect *rect,
 
     split(*rect, from_top(OVERVIEW_HEIGHT, SPACER), &overview, &closeup);
 
-    if (closeup.h > OVERVIEW_HEIGHT)
+    if (closeup.h > MIN_CLOSEUP)
         draw_overview(surface, &overview, tr, position);
     else
         closeup = *rect;
@@ -1690,15 +1704,10 @@ static int interface_main(void)
         /* Split the display into the various areas. If an area is too
          * small, abandon any actions to happen in that area. */
 
-        split(rworkspace, from_bottom(STATUS_HEIGHT, SPACER), &rtmp, &rstatus);
-        if (rtmp.h < 128 || rtmp.w < 0) {
-            rtmp = rworkspace;
-            status_update = false;
-        }
+        split(rworkspace, from_top(LIBRARY_HEIGHT + STATUS_HEIGHT + SPACER, SPACER), &rtmp, &rplayers);
 
-        split(rtmp, from_top(PLAYER_HEIGHT, SPACER), &rplayers, &rlibrary);
+        split(rtmp, from_bottom(STATUS_HEIGHT, SPACER), &rlibrary, &rstatus);
         if (rlibrary.h < LIBRARY_MIN_HEIGHT || rlibrary.w < LIBRARY_MIN_WIDTH) {
-            rplayers = rtmp;
             library_update = false;
         }
 
@@ -1904,7 +1913,7 @@ int interface_start(struct library *lib, const char *geo, bool decor)
 void interface_stop(void)
 {
     size_t n;
- 
+
     push_event(EVENT_QUIT);
 
     if (pthread_join(ph, NULL) != 0)
